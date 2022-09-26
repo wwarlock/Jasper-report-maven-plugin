@@ -11,16 +11,6 @@ package com.alexnederlof.jasperreport;
  * for the specific language governing permissions and limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -31,6 +21,16 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.codehaus.plexus.util.FileUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
 
 /**
  * Test the report generation.
@@ -39,14 +39,13 @@ public class JasperReportTest extends AbstractMojoTestCase {
 
 	private static final String TARGET_EXAMPLE_FOLDER = "target/test-classes/exampleFolders";
 	private static final String TARGET_EXAMPLE_OUT_FOLDER = "target/unitTestReports";
-	private File examplesFolder;
 	private File sourceFolder;
 	private File destinationFolder;
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		examplesFolder = new File(getBasedir(), TARGET_EXAMPLE_FOLDER);
+		final File examplesFolder = new File(getBasedir(), TARGET_EXAMPLE_FOLDER);
 		assertTrue("The folder to copy the examples from doesn't exist", examplesFolder.exists());
 	}
 
@@ -66,7 +65,7 @@ public class JasperReportTest extends AbstractMojoTestCase {
 		getAndExecuteMojo(pluginPom);
 
 		assertEquals("Files from sourcefolder do not correspond to files in the destinationFolder",
-				sourceFolder.listFiles().length, destinationFolder.listFiles().length);
+				Objects.requireNonNull(sourceFolder.listFiles()).length, Objects.requireNonNull(destinationFolder.listFiles()).length);
 		assertAllFilesAreCompiled(sourceFolder, destinationFolder);
 
 	}
@@ -90,12 +89,11 @@ public class JasperReportTest extends AbstractMojoTestCase {
 			.getProperty("net.sf.jasperreports.default.pdf.embedded");
 
 		assertEquals("Files from sourcefolder do not correspond to files in the destinationFolder",
-				sourceFolder.listFiles().length, destinationFolder.listFiles().length);
+				Objects.requireNonNull(sourceFolder.listFiles()).length, Objects.requireNonNull(destinationFolder.listFiles()).length);
 		assertAllFilesAreCompiled(sourceFolder, destinationFolder);
-		assertTrue(defaultPdfFontName != null);
-		assertTrue("default pdf font name has not been set properly", defaultPdfFontName.compareTo("Courier") == 0);
-		assertTrue("net.sf.jasperreports.default.pdf.embedded has not been set properly",
-				pdfEmbeddedValue.compareTo("true") == 0);
+		assertNotNull(defaultPdfFontName);
+		assertEquals("default pdf font name has not been set properly", 0, defaultPdfFontName.compareTo("Courier"));
+		assertEquals("net.sf.jasperreports.default.pdf.embedded has not been set properly", 0, pdfEmbeddedValue.compareTo("true"));
 	}
 
 	public void testGivenAdditionalPropertiesAreSetWhenTestingValidReportGenerationAndExportToPdfExpectNoErrors()
@@ -106,13 +104,8 @@ public class JasperReportTest extends AbstractMojoTestCase {
 		// now based on the templates, create PDF's
 		assertTrue("Destination is not a directory", destinationFolder.isDirectory());
 
-		List<File> testFiles = Arrays.asList(destinationFolder.listFiles(new FileFilter() {
-			@Override
-			public boolean accept(File pathname) {
-				return pathname.toString()
-					.contains("PlainTextReportWithDefaultFontReport");
-			}
-		}));
+		List<File> testFiles = Arrays.asList(Objects.requireNonNull(destinationFolder.listFiles(pathname -> pathname.toString()
+				.contains("PlainTextReportWithDefaultFontReport"))));
 
 		if (testFiles.size() != 1) {
 			fail("Expected exactly one testfile to be found in directory");
@@ -169,12 +162,12 @@ public class JasperReportTest extends AbstractMojoTestCase {
 		assertTrue("Source folder is not a directory", sourceFolder.isDirectory());
 		assertTrue("Destination is not a directory", destinationFolder.isDirectory());
 		Set<String> filenames = new HashSet<String>();
-		for (File file : sourceFolder.listFiles()) {
+		for (File file : Objects.requireNonNull(sourceFolder.listFiles())) {
 			if (file.isFile()) {
 				filenames.add(getNameWithoutSuffix(file, ".jrxml"));
 			}
 		}
-		for (File file : destinationFolder.listFiles()) {
+		for (File file : Objects.requireNonNull(destinationFolder.listFiles())) {
 			if (file.isFile()) {
 				filenames.remove(getNameWithoutSuffix(file, ".jasper"));
 			}
@@ -227,7 +220,7 @@ public class JasperReportTest extends AbstractMojoTestCase {
 	public void testWrongSuffixDoesntCompile() throws Exception {
 		setupSourceAndDestinationFolder("/wrongExtensions", "/wrongExtensions_out");
 		getAndExecuteMojo(getBasedir() + "/src/test/resources/testWrongExtensionsPom.xml");
-		assertTrue("Output folder should be empty", destinationFolder.list().length == 0);
+		assertEquals("Output folder should be empty", 0, destinationFolder.list().length);
 	}
 
 	/**
@@ -240,7 +233,7 @@ public class JasperReportTest extends AbstractMojoTestCase {
 		createTheEmptyFolderIfItDoesntExist();
 		setupSourceAndDestinationFolder("/emptyFolder", "/emptyFolder_out");
 		getAndExecuteMojo(getBasedir() + "/src/test/resources/testEmptyFolderPom.xml");
-		assertTrue("Output folder should be empty", destinationFolder.list().length == 0);
+		assertEquals("Output folder should be empty", 0, destinationFolder.list().length);
 	}
 
 	/**
@@ -268,7 +261,7 @@ public class JasperReportTest extends AbstractMojoTestCase {
 	public void testNonExistentFolderAllowed() throws Exception {
 		setupSourceAndDestinationFolder("/emptyFolder", "/emptyFolder_out");
 		getAndExecuteMojo(getBasedir() + "/src/test/resources/testNonExistentFolderAllowedPom.xml");
-		assertTrue("Output folder should be empty", destinationFolder.list().length == 0);
+		assertEquals("Output folder should be empty", 0, destinationFolder.list().length);
 	}
 
 	/**
@@ -309,7 +302,7 @@ public class JasperReportTest extends AbstractMojoTestCase {
 
 	private Set<String> detectFolderStructure(File folderToSearch) {
 		Set<String> set = new HashSet<String>();
-		for (File f : folderToSearch.listFiles()) {
+		for (File f : Objects.requireNonNull(folderToSearch.listFiles())) {
 			if (f.isDirectory()) {
 				set.addAll(detectFolderStructure(f));
 			}
